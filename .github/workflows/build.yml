@@ -18,11 +18,28 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
     
+    - name: Make Gradle wrapper executable
+      run: |
+        if [ -f gradlew ]; then
+          chmod +x gradlew
+        fi
+    
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
     
     - name: Build with Gradle
-      run: chmod +x gradlew && ./gradlew build
+      run: |
+        # Create minimal build files if missing
+        if [ ! -f build.gradle ]; then
+          echo "plugins { id 'fabric-loom' version '1.6-SNAPSHOT' }" > build.gradle
+          echo "version = '1.0.0'" >> build.gradle
+          echo "group = 'com.oredetector'" >> build.gradle
+          echo "repositories { mavenCentral() maven { url 'https://maven.fabricmc.net/' } }" >> build.gradle
+          echo "dependencies { minecraft 'com.mojang:minecraft:1.21.1' mappings 'net.fabricmc:yarn:1.21.1+build.1:v2' modImplementation 'net.fabricmc:fabric-loader:0.15.11' modImplementation 'net.fabricmc.fabric-api:fabric-api:0.96.0+1.21.1' }" >> build.gradle
+        fi
+        gradle build --no-daemon
+      env:
+        GRADLE_OPTS: "-Dorg.gradle.daemon=false"
     
     - name: Upload mod JAR
       uses: actions/upload-artifact@v4
